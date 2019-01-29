@@ -8,6 +8,7 @@
 #include <sstream>
 #include <random>
 #include <functional>
+#include <map>
 
 #include "protoTest.pb.h"
 
