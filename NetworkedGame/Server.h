@@ -44,7 +44,7 @@ private:
 		Cavalry
 	};
 
-	const enum Command 
+	const enum Command
 	{
 		Challenge,
 		Info,
@@ -108,7 +108,9 @@ private:
 	// challenge and functor
 	// Map of Enum and map of command name and functor
 
-	std::map<Command, std::function<bool>*(std::string, int, int[])> m_availableCommands;
+	std::function<bool(int)> lolwhat;
+
+	std::map<Command, std::function<bool(std::string, int, int[])>> m_availableCommands;
 
 	std::vector<std::string> m_commands{ "Challenge", "Info", "Quit", "Login", "Logout", "Chat", "List", "Commands" };
 	const std::string m_sendString = "Ready to login!";

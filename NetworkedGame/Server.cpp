@@ -31,7 +31,6 @@ DWORD WINAPI GameInstance(LPVOID playerSockets)
 	{
 		if (!game.has_army1())
 		{
-			//what
 			Server::InitArmy(challenger, challengee, army1, game, recvbuf, true);
 		}
 
@@ -735,7 +734,7 @@ void Server::SendClientCommandList(int client)
 
 void Server::InitializeCommandFunctions()
 {
-	std::function<bool(std::string, int, int[])>* loginFunction = [noChallenge = this->m_noChallenge, clientsConnected = this->m_clientsConnected,
+	std::function<bool(std::string, int, int[])> loginFunction = [noChallenge = this->m_noChallenge, clientsConnected = this->m_clientsConnected,
 		&players = this->m_players](std::string playerInput, int i, int client[]) -> bool
 	{
 		std::string temp;
@@ -769,18 +768,18 @@ void Server::InitializeCommandFunctions()
 
 				testPlayer.ParseFromString(it->second);
 
-				//TODO fix this OCT 1
+				//testPlayer.name() instead of testPlayer.name
 				if (testPlayer.password() == newPlayer.password())
 				{
 					send(client[i], "Logging in..", sizeof("Logging in.."), 0);
 					clientsConnected[i].player = testPlayer;
 					clientsConnected[i].player.set_playerstate(Player::PlayerState::Player_PlayerState_Lobby);
-					std::cout << "Player: " << testPlayer.name << " has logged in.";
+					std::cout << "Player: " << testPlayer.name() << " has logged in.";
 				}
 				else
 				{
 					send(client[i], "Incorrect password", sizeof("Incorrect password"), 0);
-					std::cout << "Player: " << testPlayer.name << " has entered an incorrect password.";
+					std::cout << "Player: " << testPlayer.name() << " has entered an incorrect password.";
 				}
 
 			}
@@ -805,7 +804,7 @@ void Server::InitializeCommandFunctions()
 	};
 	//std::function<bool(std::string, int, int[])> loginFunction = loginFunctionLambda; //loginFunctionLambda;//::bind(&Server::LoginUser, this);
 	//<Command, std::map<std::string, std::function<bool()>>>
-	m_availableCommands.emplace(std::pair<Command, std::function<bool(std::string, int, int[])>*>(Command::Login, loginFunction));
+	//m_availableCommands.emplace(std::pair<Command, std::function<bool(std::string, int, int[])>*>(Command::Login, loginFunction));
 }
 
 void Server::LoginUser()
