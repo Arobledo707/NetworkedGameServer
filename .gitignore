@@ -330,3 +330,4 @@ ASALocalRun/
 .mfractor/
 
 !/protobuf-3.1.0/src/
+/protobuf_libs_debug_3.1/

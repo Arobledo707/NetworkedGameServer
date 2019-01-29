@@ -177,6 +177,8 @@ bool Server::Init()
 	FD_ZERO(&m_allSet);
 	FD_SET(m_listenSocket, &m_allSet);
 
+	InitializeCommandFunctions();
+
 	return true;
 }
 
@@ -250,70 +252,9 @@ void Server::Update()
 					{
 						if (playerInput.substr(0, m_commands[Command::Login].size()) == m_commands[Command::Login])
 						{
-							auto loginFunction = m_availableCommands.find(Command::Login);
-							//loginFunction->second(playerInput, i, m_client);
-							//std::string temp;
-
-							//int j = 6;
-							//while (playerInput[j] != ' ')
-							//{
-							//	temp += playerInput[j];
-							//	++j;
-							//}
-							////printf("Size of tempName %d\n", temp.length());
-							////printf("Size of playerInput %d\n", playerInput.length());
-
-							//if (playerInput.length() < 5 + temp.length())
-							//{
-							//	std::string noPassword = "No password entered, Enter a password along with your username.";
-							//	send(m_client[i], noPassword.c_str(), noPassword.length(), 0);
-							//	break;
-							//}
-							//else
-							//{
-
-							//	Player newPlayer;
-							//	newPlayer.set_name(temp);
-							//	newPlayer.set_password(playerInput.substr((temp.length()), playerInput.length()));
-
-							//	std::unordered_map<std::string, std::string>::iterator it = m_players.find(newPlayer.name());
-							//	if (it != m_players.end())
-							//	{
-							//		Player testPlayer;
-
-							//		testPlayer.ParseFromString(it->second);
-
-							//		if (testPlayer.password() == newPlayer.password())
-							//		{
-							//			send(m_client[i], "Logging in..", sizeof("Logging in.."), 0);
-							//			m_clientsConnected[i].player = testPlayer;
-							//			m_clientsConnected[i].player.set_playerstate(Player::PlayerState::Player_PlayerState_Lobby);
-							//			std::cout << "Player: " << testPlayer.name << " has logged in.";
-							//		}
-							//		else
-							//		{
-							//			send(m_client[i], "Incorrect password", sizeof("Incorrect password"), 0);
-							//			std::cout << "Player: " << testPlayer.name << " has entered an incorrect password.";
-							//		}
-
-							//	}
-							//	else
-							//	{
-							//		newPlayer.set_wins(0);
-							//		newPlayer.set_losses(0);
-							//		newPlayer.set_clientid(i);
-							//		newPlayer.set_playerstate(Player::PlayerState::Player_PlayerState_Lobby);
-							//		newPlayer.set_challengeid(m_noChallenge);
-							//		newPlayer.SerializeToString(&temp);
-
-							//		m_players.emplace(newPlayer.name(), temp);
-							//		send(m_client[i], "Logging in..", sizeof("Logging in.."), 0);
-							//		m_clientsConnected[i].player = newPlayer;
-							//	}
-							//	//Send logged in user list of commands
-							//	SendClientCommandList(m_client[i]);
-							//	newPlayer.SerializeToString(&temp);
-							//}
+ 							auto loginFunction = m_availableCommands.find(Command::Login);
+							//std::function<bool(std::string, int, int[])> function = m_availableCommands.find(Command::Login);
+							loginFunction->second(playerInput, i, &m_client[i]);
 
 						}
 					}
@@ -745,8 +686,8 @@ void Server::InitializeCommandFunctions()
 			temp += playerInput[j];
 			++j;
 		}
-		//printf("Size of tempName %d\n", temp.length());
-		//printf("Size of playerInput %d\n", playerInput.length());
+		printf("Size of tempName %d\n", temp.length());
+		printf("Size of playerInput %d\n", playerInput.length());
 
 		if (playerInput.length() < 5 + temp.length())
 		{
@@ -760,7 +701,7 @@ void Server::InitializeCommandFunctions()
 			Player newPlayer;
 			newPlayer.set_name(temp);
 			newPlayer.set_password(playerInput.substr((temp.length()), playerInput.length()));
-
+			printf(temp.c_str());
 			std::unordered_map<std::string, std::string>::iterator it = players.find(newPlayer.name());
 			if (it != players.end())
 			{
@@ -805,6 +746,8 @@ void Server::InitializeCommandFunctions()
 	//std::function<bool(std::string, int, int[])> loginFunction = loginFunctionLambda; //loginFunctionLambda;//::bind(&Server::LoginUser, this);
 	//<Command, std::map<std::string, std::function<bool()>>>
 	//m_availableCommands.emplace(std::pair<Command, std::function<bool(std::string, int, int[])>*>(Command::Login, loginFunction));
+
+	m_availableCommands.emplace(Command::Login, loginFunction);
 }
 
 void Server::LoginUser()
