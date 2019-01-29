@@ -252,7 +252,7 @@ void Server::Update()
 					{
 						if (playerInput.substr(0, m_commands[Command::Login].size()) == m_commands[Command::Login])
 						{
- 							auto loginFunction = m_availableCommands.find(Command::Login);
+							auto loginFunction = m_availableCommands.find(Command::Login);
 							//std::function<bool(std::string, int, int[])> function = m_availableCommands.find(Command::Login);
 							loginFunction->second(playerInput, i, &m_client[i]);
 
@@ -709,7 +709,6 @@ void Server::InitializeCommandFunctions()
 
 				testPlayer.ParseFromString(it->second);
 
-				//testPlayer.name() instead of testPlayer.name
 				if (testPlayer.password() == newPlayer.password())
 				{
 					send(client[i], "Logging in..", sizeof("Logging in.."), 0);
@@ -743,11 +742,21 @@ void Server::InitializeCommandFunctions()
 
 		}
 	};
-	//std::function<bool(std::string, int, int[])> loginFunction = loginFunctionLambda; //loginFunctionLambda;//::bind(&Server::LoginUser, this);
-	//<Command, std::map<std::string, std::function<bool()>>>
-	//m_availableCommands.emplace(std::pair<Command, std::function<bool(std::string, int, int[])>*>(Command::Login, loginFunction));
+
+	std::function<bool(std::string, int, int[])> commandFunction = [commands = this->m_commands]
+	(std::string playerInput, int i, int client[]) -> bool
+	{
+		std::string tempString = "Here are the available commands:\n";
+		for (std::string command : commands)
+		{
+			tempString.append(command + "\n");
+		}
+		std::cout << tempString;
+		send(*client, tempString.c_str(), tempString.size(), 0);
+	};
 
 	m_availableCommands.emplace(Command::Login, loginFunction);
+	m_availableCommands.emplace(Command::Commands, commandFunction);
 }
 
 void Server::LoginUser()
