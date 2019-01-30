@@ -54,7 +54,8 @@ private:
 		Logout,
 		Chat,
 		List,
-		Commands
+		Commands,
+		CommandSize
 	};
 
 public:
@@ -75,7 +76,6 @@ public:
 private:
 	void SendClientCommandList(int client);
 	void InitializeCommandFunctions();
-	void LoginUser();
 
 private:
 	SOCKET m_listenSocket = INVALID_SOCKET;
@@ -108,8 +108,6 @@ private:
 	//TODO Refactor into map
 	// challenge and functor
 	// Map of Enum and map of command name and functor
-
-	std::function<bool(int)> lolwhat;
 
 	std::map<Command, std::function<bool(std::string, int, int[])>> m_availableCommands;
 

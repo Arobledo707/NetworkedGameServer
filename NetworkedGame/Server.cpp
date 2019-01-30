@@ -753,13 +753,53 @@ void Server::InitializeCommandFunctions()
 		}
 		std::cout << tempString;
 		send(*client, tempString.c_str(), tempString.size(), 0);
+		return true;
+	};
+
+	std::function<bool(std::string, int, int[])> listFunction = [commands = this->m_commands]
+	(std::string playerInput, int i, int client[]) -> bool
+	{
+		return true;
+	};
+
+	std::function<bool(std::string, int, int[])> infoFunction = [commands = this->m_commands]
+	(std::string playerInput, int i, int client[]) -> bool
+	{
+		return true;
+	};
+
+	std::function<bool(std::string, int, int[])> logoutFunction = [commands = this->m_commands]
+	(std::string playerInput, int i, int client[]) -> bool
+	{
+		return true;
+	};
+
+	std::function<bool(std::string, int, int[])> quitFunction = [commands = this->m_commands]
+	(std::string playerInput, int i, int client[]) -> bool
+	{
+		return true;
+	};
+
+	std::function<bool(std::string, int, int[])> chatFunction = [commands = this->m_commands]
+	(std::string playerInput, int i, int client[]) -> bool
+	{
+		return true;
+	};
+
+	std::function<bool(std::string, int, int[])> challengeFunction = [commands = this->m_commands]
+	(std::string playerInput, int i, int client[]) -> bool
+	{
+		return true;
 	};
 
 	m_availableCommands.emplace(Command::Login, loginFunction);
 	m_availableCommands.emplace(Command::Commands, commandFunction);
-}
-
-void Server::LoginUser()
-{
+	m_availableCommands.emplace(Command::List, listFunction);
+	m_availableCommands.emplace(Command::Info, infoFunction);
+	m_availableCommands.emplace(Command::Logout, logoutFunction);
+	m_availableCommands.emplace(Command::Quit, quitFunction);
+	m_availableCommands.emplace(Command::Challenge, challengeFunction);
+	m_availableCommands.emplace(Command::Chat, chatFunction);
+	assert(m_availableCommands.size() == Command::CommandSize);
 }
 
