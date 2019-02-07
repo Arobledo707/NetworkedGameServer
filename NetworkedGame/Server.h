@@ -16,6 +16,9 @@
 #define DEFAULT_BUFLEN 512
 #define FD_SETSIZE 100
 
+//TODO make client check if input is a command then send that message
+//
+
 struct ClientConnection
 {
 	SOCKET clientConnection;

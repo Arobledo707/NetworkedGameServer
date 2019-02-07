@@ -195,7 +195,12 @@ void Server::Update()
 			m_clilen = sizeof(m_clientAddr);
 			m_connfd = accept(m_listenSocket, (sockaddr*)&m_clientAddr, &m_clilen);
 
-			send(m_connfd, m_sendString.c_str(), m_sendString.length() + 1, 0);
+			m_iResult = send(m_connfd, m_sendString.c_str(), m_sendString.length() + 1, 0);
+
+			if (m_iResult == SOCKET_ERROR)
+			{
+				std::cout << "send failed: " << WSAGetLastError() << std::endl;
+			}
 
 			for (i = 0; i < FD_SETSIZE; ++i)
 				if (m_client[i] < 0)
@@ -208,7 +213,7 @@ void Server::Update()
 
 			if (i == FD_SETSIZE)
 			{
-				printf("Error: too many clients!");
+				std::cout << "Error: too many clients!" << std::endl;
 			}
 
 			FD_SET(m_connfd, &m_allSet);
@@ -254,7 +259,14 @@ void Server::Update()
 						{
 							auto loginFunction = m_availableCommands.find(Command::Login);
 							//std::function<bool(std::string, int, int[])> function = m_availableCommands.find(Command::Login);
-							loginFunction->second(playerInput, i, &m_client[i]);
+							if (loginFunction->second(playerInput, i, &m_client[i]))
+							{
+								std::cout << "Client: " << m_client[i] << " logged in." << std::endl;
+							}
+							else
+							{
+								std::cout << "Client: " << m_client[i] << " failed to login" << std::endl;
+							}
 
 						}
 					}
@@ -390,12 +402,10 @@ void Server::Update()
 
 					else if (playerInput.substr(0, m_commands[Command::List].size()) == m_commands[Command::List])
 					{
-						for (ClientConnection client : m_clientsConnected)
+						auto listFunction = m_availableCommands.find(Command::List);
+						if (!listFunction->second(playerInput, i, &m_client[i]))
 						{
-							if (client.player.playerstate() == Player::PlayerState::Player_PlayerState_Lobby)
-							{
-								send(m_clientsConnected[i].clientConnection, client.player.name().c_str(), client.player.name().length(), 0);
-							}
+							std::cout << "failed to send player list" << std::endl;
 						}
 					}
 
@@ -678,6 +688,7 @@ void Server::InitializeCommandFunctions()
 	std::function<bool(std::string, int, int[])> loginFunction = [noChallenge = this->m_noChallenge, clientsConnected = this->m_clientsConnected,
 		&players = this->m_players](std::string playerInput, int i, int client[]) -> bool
 	{
+		int iResult;
 		std::string temp;
 
 		int j = 6;
@@ -692,7 +703,11 @@ void Server::InitializeCommandFunctions()
 		if (playerInput.length() < 5 + temp.length())
 		{
 			std::string noPassword = "No password entered, Enter a password along with your username.";
-			send(client[i], noPassword.c_str(), noPassword.length(), 0);
+			iResult = send(client[i], noPassword.c_str(), noPassword.length(), 0);
+			if (iResult == SOCKET_ERROR)
+			{
+				std::cout << "send failed: " << WSAGetLastError() << std::endl;
+			}
 			return false;
 		}
 		else
@@ -711,14 +726,26 @@ void Server::InitializeCommandFunctions()
 
 				if (testPlayer.password() == newPlayer.password())
 				{
-					send(client[i], "Logging in..", sizeof("Logging in.."), 0);
+					iResult = send(client[i], "Logging in..", sizeof("Logging in.."), 0);
+
+					if (iResult == SOCKET_ERROR)
+					{
+						std::cout << "send failed: " << WSAGetLastError() << std::endl;
+					}
+
 					clientsConnected[i].player = testPlayer;
 					clientsConnected[i].player.set_playerstate(Player::PlayerState::Player_PlayerState_Lobby);
 					std::cout << "Player: " << testPlayer.name() << " has logged in.";
 				}
 				else
 				{
-					send(client[i], "Incorrect password", sizeof("Incorrect password"), 0);
+					iResult = send(client[i], "Incorrect password", sizeof("Incorrect password"), 0);
+
+					if (iResult == SOCKET_ERROR)
+					{
+						std::cout << "send failed: " << WSAGetLastError() << std::endl;
+					}
+
 					std::cout << "Player: " << testPlayer.name() << " has entered an incorrect password.";
 				}
 
@@ -733,7 +760,14 @@ void Server::InitializeCommandFunctions()
 				newPlayer.SerializeToString(&temp);
 
 				players.emplace(newPlayer.name(), temp);
-				send(client[i], "Logging in..", sizeof("Logging in.."), 0);
+
+				iResult = send(client[i], "Logging in..", sizeof("Logging in.."), 0);
+
+				if (iResult == SOCKET_ERROR)
+				{
+					std::cout << "send failed: " << WSAGetLastError() << std::endl;
+				}
+
 				clientsConnected[i].player = newPlayer;
 			}
 			//Send logged in user list of commands
@@ -752,13 +786,31 @@ void Server::InitializeCommandFunctions()
 			tempString.append(command + "\n");
 		}
 		std::cout << tempString;
-		send(*client, tempString.c_str(), tempString.size(), 0);
+		int iResult = send(*client, tempString.c_str(), tempString.size(), 0);
+		if (iResult == SOCKET_ERROR)
+		{
+			std::cout << "send failed: " << WSAGetLastError() << std::endl;
+			return false;
+		}
 		return true;
 	};
 
-	std::function<bool(std::string, int, int[])> listFunction = [commands = this->m_commands]
+	std::function<bool(std::string, int, int[])> listFunction = [&clientsConnected = this->m_clientsConnected]
 	(std::string playerInput, int i, int client[]) -> bool
 	{
+		int iResult;
+		for (ClientConnection client : clientsConnected)
+		{
+			if (client.player.playerstate() == Player::PlayerState::Player_PlayerState_Lobby)
+			{
+				iResult = send(clientsConnected[i].clientConnection, client.player.name().c_str(), client.player.name().length(), 0);
+
+				if (iResult == SOCKET_ERROR)
+				{
+					std::cout << "send failed: " << WSAGetLastError() << std::endl;
+				}
+			}
+		}
 		return true;
 	};
 
