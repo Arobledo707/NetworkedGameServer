@@ -48,7 +48,7 @@ private:
 		Cavalry
 	};
 
-	const enum Command
+	enum Command
 	{
 		Challenge,
 		Info,

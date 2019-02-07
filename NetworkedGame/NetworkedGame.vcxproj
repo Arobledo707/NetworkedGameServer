@@ -162,6 +162,7 @@
   <ItemGroup>
     <ClInclude Include="protoTest.pb.h" />
     <ClInclude Include="Server.h" />
+    <ClInclude Include="ServerCommands.pb.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -169,6 +170,7 @@
     <ClCompile Include="NetworkedGame.cpp" />
     <ClCompile Include="protoTest.pb.cc" />
     <ClCompile Include="Server.cpp" />
+    <ClCompile Include="ServerCommands.pb.cc" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
