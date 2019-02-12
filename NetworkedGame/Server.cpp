@@ -252,14 +252,17 @@ void Server::Update()
 				{
 					std::string playerInput = m_buff;
 
+					ServerCommand command;
+					command.ParseFromString(playerInput);
+
 					// only allow login if logged out
 					if (m_clientsConnected[i].player.playerstate() == Player::PlayerState::Player_PlayerState_LoggedOut)
 					{
-						if (playerInput.substr(0, m_commands[Command::Login].size()) == m_commands[Command::Login])
+						//TODO refactor login function to be fine with command.content instead of entire string
+						if (command.command == Command::Login)
 						{
 							auto loginFunction = m_availableCommands.find(Command::Login);
-							//std::function<bool(std::string, int, int[])> function = m_availableCommands.find(Command::Login);
-							if (loginFunction->second(playerInput, i, &m_client[i]))
+							if (loginFunction->second(command.content, i, &m_client[i]))
 							{
 								std::cout << "Client: " << m_client[i] << " logged in." << std::endl;
 							}
@@ -267,8 +270,21 @@ void Server::Update()
 							{
 								std::cout << "Client: " << m_client[i] << " failed to login" << std::endl;
 							}
-
 						}
+						//if (playerInput.substr(0, m_commands[Command::Login].size()) == m_commands[Command::Login])
+						//{
+						//	auto loginFunction = m_availableCommands.find(Command::Login);
+						//	//std::function<bool(std::string, int, int[])> function = m_availableCommands.find(Command::Login);
+						//	if (loginFunction->second(playerInput, i, &m_client[i]))
+						//	{
+						//		std::cout << "Client: " << m_client[i] << " logged in." << std::endl;
+						//	}
+						//	else
+						//	{
+						//		std::cout << "Client: " << m_client[i] << " failed to login" << std::endl;
+						//	}
+
+						//}
 					}
 					else if (m_clientsConnected[i].player.playerstate() == Player::PlayerState::Player_PlayerState_Challenged &&
 						m_clientsConnected[i].player.challengeid() != m_noChallenge)
@@ -781,10 +797,10 @@ void Server::InitializeCommandFunctions()
 	(std::string playerInput, int i, int client[]) -> bool
 	{
 		std::string tempString = "Here are the available commands:\n";
-		for (std::string command : commands)
-		{
-			tempString.append(command + "\n");
-		}
+		//for (std::string command : commands)
+		//{
+		//	tempString.append(command + "\n");
+		//}
 		std::cout << tempString;
 		int iResult = send(*client, tempString.c_str(), tempString.size(), 0);
 		if (iResult == SOCKET_ERROR)

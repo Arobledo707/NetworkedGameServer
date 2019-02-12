@@ -11,6 +11,7 @@
 #include <map>
 
 #include "protoTest.pb.h"
+#include "ServerCommands.pb.h"
 
 #define DEFAULT_PORT 9999
 #define DEFAULT_BUFLEN 512
@@ -58,6 +59,7 @@ private:
 		Chat,
 		List,
 		Commands,
+		Help,
 		CommandSize
 	};
 
@@ -114,6 +116,6 @@ private:
 
 	std::map<Command, std::function<bool(std::string, int, int[])>> m_availableCommands;
 
-	std::vector<std::string> m_commands{ "Challenge", "Info", "Quit", "Login", "Logout", "Chat", "List", "Commands" };
+	std::vector<std::string> m_commands{ "Challenge", "Info", "Quit", "Login", "Logout", "Chat", "List", "Commands, Help" };
 	const std::string m_sendString = "Ready to login!";
 };
