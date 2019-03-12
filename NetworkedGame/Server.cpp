@@ -42,8 +42,8 @@ DWORD WINAPI GameInstance(LPVOID playerSockets)
 
 		// pretty bad but it does work for now
 		std::string clearScreen = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
-		send(challengee->clientConnection, clearScreen.c_str(), clearScreen.length(), 0);
-		send(challenger->clientConnection, clearScreen.c_str(), clearScreen.length(), 0);
+		send(challengee->clientConnection, clearScreen.c_str(), static_cast<int>(clearScreen.length()), 0);
+		send(challenger->clientConnection, clearScreen.c_str(), static_cast<int>(clearScreen.length()), 0);
 
 
 		if (playerOneTurn)
@@ -53,8 +53,8 @@ DWORD WINAPI GameInstance(LPVOID playerSockets)
 
 			std::string killedString = challengee->player.name() + " " + std::to_string(enemiesKilled[0]) + " swordsman killed\n" +
 				std::to_string(enemiesKilled[1]) + " archers killed\n" + std::to_string(enemiesKilled[2]) + " cavalry killed";
-			send(challenger->clientConnection, killedString.c_str(), killedString.length(), 0);
-			send(challengee->clientConnection, killedString.c_str(), killedString.length(), 0);
+			send(challenger->clientConnection, killedString.c_str(), static_cast<int>(killedString.length()), 0);
+			send(challengee->clientConnection, killedString.c_str(), static_cast<int>(killedString.length()), 0);
 		}
 		else
 		{
@@ -63,19 +63,19 @@ DWORD WINAPI GameInstance(LPVOID playerSockets)
 
 			std::string killedString = challenger->player.name() + " " + std::to_string(enemiesKilled[0]) + " swordsman killed\n" +
 				std::to_string(enemiesKilled[1]) + " archers killed\n" + std::to_string(enemiesKilled[2]) + " cavalry killed";
-			send(challenger->clientConnection, killedString.c_str(), killedString.length(), 0);
-			send(challengee->clientConnection, killedString.c_str(), killedString.length(), 0);
+			send(challenger->clientConnection, killedString.c_str(), static_cast<int>(killedString.length()), 0);
+			send(challengee->clientConnection, killedString.c_str(), static_cast<int>(killedString.length()), 0);
 		}
 
 		std::string army1Stats = Server::PrintArmy(army1, challengee->player);
 		std::string army2Stats = Server::PrintArmy(army2, challenger->player);
 
 		//send Army stats
-		send(challenger->clientConnection, army1Stats.c_str(), army1Stats.length(), 0);
-		send(challenger->clientConnection, army2Stats.c_str(), army2Stats.length(), 0);
+		send(challenger->clientConnection, army1Stats.c_str(), static_cast<int>(army1Stats.length()), 0);
+		send(challenger->clientConnection, army2Stats.c_str(), static_cast<int>(army2Stats.length()), 0);
 
-		send(challengee->clientConnection, army1Stats.c_str(), army1Stats.length(), 0);
-		send(challengee->clientConnection, army2Stats.c_str(), army2Stats.length(), 0);
+		send(challengee->clientConnection, army1Stats.c_str(), static_cast<int>(army1Stats.length()), 0);
+		send(challengee->clientConnection, army2Stats.c_str(), static_cast<int>(army2Stats.length()), 0);
 
 		if (game.army1().archers() <= 0 && game.army1().swordsman() <= 0 && game.army1().cavalry() <= 0)
 		{
@@ -188,14 +188,14 @@ void Server::Update()
 	for (; ;)
 	{
 		m_rset = m_allSet;
-		m_nready = select(m_maxfd + 1, &m_rset, NULL, NULL, NULL);
+		m_nready = select(static_cast<int>(m_maxfd + 1), &m_rset, NULL, NULL, NULL);
 
 		if (FD_ISSET(m_listenSocket, &m_rset))
 		{
 			m_clilen = sizeof(m_clientAddr);
 			m_connfd = accept(m_listenSocket, (sockaddr*)&m_clientAddr, &m_clilen);
 
-			m_iResult = send(m_connfd, m_sendString.c_str(), m_sendString.length() + 1, 0);
+			m_iResult = send(m_connfd, m_sendString.c_str(), static_cast<int>(m_sendString.length() + 1), 0);
 
 			if (m_iResult == SOCKET_ERROR)
 			{
@@ -207,7 +207,7 @@ void Server::Update()
 				{
 					m_clientsConnected[i].clientConnection = m_connfd;
 					m_clientsConnected[i].player.set_playerstate(Player::PlayerState::Player_PlayerState_LoggedOut);
-					m_client[i] = m_connfd;
+					m_client[i] = static_cast<int>(m_connfd);
 					break;
 				}
 
@@ -254,15 +254,14 @@ void Server::Update()
 
 					ServerCommand command;
 					command.ParseFromString(playerInput);
-
 					// only allow login if logged out
 					if (m_clientsConnected[i].player.playerstate() == Player::PlayerState::Player_PlayerState_LoggedOut)
 					{
 						//TODO refactor login function to be fine with command.content instead of entire string
-						if (command.command == Command::Login)
+						if (command.command() == Command::Login)
 						{
 							auto loginFunction = m_availableCommands.find(Command::Login);
-							if (loginFunction->second(command.content, i, &m_client[i]))
+							if (loginFunction->second(command.content(), i, &m_client[i]))
 							{
 								std::cout << "Client: " << m_client[i] << " logged in." << std::endl;
 							}
@@ -325,8 +324,8 @@ void Server::Update()
 
 								std::string challengeCancelled = "Challenged Cancelled";
 
-								send(m_clientsConnected[i].clientConnection, challengeCancelled.c_str(), challengeCancelled.length(), 0);
-								send(challenge.challenger->clientConnection, challengeCancelled.c_str(), challengeCancelled.length(), 0);
+								send(m_clientsConnected[i].clientConnection, challengeCancelled.c_str(), static_cast<int>(challengeCancelled.length()), 0);
+								send(challenge.challenger->clientConnection, challengeCancelled.c_str(), static_cast<int>(challengeCancelled.length()), 0);
 							}
 						}
 
@@ -374,7 +373,7 @@ void Server::Update()
 							Player challengee;
 							challengee.ParseFromString(it->second);
 							std::string sendChallenge = m_clientsConnected[i].player.name() + " challenges you! \nDo you accept? Yes/No";
-							send(m_clientsConnected[challengee.clientid()].clientConnection, sendChallenge.c_str(), sendChallenge.length(), 0);
+							send(m_clientsConnected[challengee.clientid()].clientConnection, sendChallenge.c_str(), static_cast<int>(sendChallenge.length()), 0);
 
 							m_clientsConnected[i].player.set_playerstate(Player::PlayerState::Player_PlayerState_Challenged);
 							m_clientsConnected[challengee.clientid()].player.set_playerstate(Player::PlayerState::Player_PlayerState_Challenged);
@@ -394,7 +393,7 @@ void Server::Update()
 						else
 						{
 							std::string playerNotFound = "There is no player with that name";
-							send(m_clientsConnected[i].clientConnection, playerNotFound.c_str(), playerNotFound.length(), 0);
+							send(m_clientsConnected[i].clientConnection, playerNotFound.c_str(), static_cast<int>(playerNotFound.length()), 0);
 						}
 					}
 					else if (playerInput.substr(0, m_commands[Command::Chat].size()) == m_commands[Command::Chat])
@@ -406,7 +405,7 @@ void Server::Update()
 							if (m_clientsConnected[j].clientConnection != INVALID_SOCKET &&
 								m_clientsConnected[j].player.playerstate() == Player::PlayerState::Player_PlayerState_Lobby)
 							{
-								send(m_clientsConnected[j].clientConnection, sendMessage.c_str(), sendMessage.length(), 0);
+								send(m_clientsConnected[j].clientConnection, sendMessage.c_str(), static_cast<int>(sendMessage.length()), 0);
 							}
 						}
 					}
@@ -459,9 +458,9 @@ void Server::InitArmy(ClientConnection* challenger, ClientConnection* challengee
 	int archerCount = 0;
 	int cavalryCount = 0;
 
-	send(challenger->clientConnection, waitOnChallengee.c_str(), waitOnChallengee.length(), 0);
+	send(challenger->clientConnection, waitOnChallengee.c_str(), static_cast<int>(waitOnChallengee.length()), 0);
 
-	send(challengee->clientConnection, howManySwordsMan.c_str(), howManySwordsMan.length(), 0);
+	send(challengee->clientConnection, howManySwordsMan.c_str(), static_cast<int>(howManySwordsMan.length()), 0);
 	recv(challengee->clientConnection, recvbuf, sizeof(recvbuf), 0);
 
 	std::stringstream swordsmanStream(recvbuf);
@@ -485,7 +484,7 @@ void Server::InitArmy(ClientConnection* challenger, ClientConnection* challengee
 	if (remainingArmy > 0)
 	{
 		memset(recvbuf, 0, sizeof(char) * DEFAULT_BUFLEN);
-		send(challengee->clientConnection, howManyArchers.c_str(), howManyArchers.length(), 0);
+		send(challengee->clientConnection, howManyArchers.c_str(), static_cast<int>(howManyArchers.length()), 0);
 		recv(challengee->clientConnection, recvbuf, sizeof(recvbuf), 0);
 
 		std::stringstream archerStream(recvbuf);
@@ -510,7 +509,7 @@ void Server::InitArmy(ClientConnection* challenger, ClientConnection* challengee
 	if (remainingArmy > 0)
 	{
 		memset(recvbuf, 0, sizeof(char) * DEFAULT_BUFLEN);
-		send(challengee->clientConnection, howManyCavalry.c_str(), howManyCavalry.length(), 0);
+		send(challengee->clientConnection, howManyCavalry.c_str(), static_cast<int>(howManyCavalry.length()), 0);
 		recv(challengee->clientConnection, recvbuf, sizeof(recvbuf), 0);
 
 		std::stringstream cavalryStream(recvbuf);
@@ -550,7 +549,7 @@ void Server::InitArmy(ClientConnection* challenger, ClientConnection* challengee
 		game.set_allocated_army2(&army);
 	}
 
-	send(challengee->clientConnection, waitOnChallenger.c_str(), waitOnChallenger.length(), 0);
+	send(challengee->clientConnection, waitOnChallenger.c_str(), static_cast<int>(waitOnChallenger.length()), 0);
 }
 
 std::vector<int> Server::TakeTurn(Army & army, Army & enemyArmy, ClientConnection * player, char * recvbuf)
@@ -559,7 +558,7 @@ std::vector<int> Server::TakeTurn(Army & army, Army & enemyArmy, ClientConnectio
 	std::vector<int> totalEnemiesKilled = { 0, 0, 0 };
 	do
 	{
-		send(player->clientConnection, rollNow.c_str(), rollNow.length(), 0);
+		send(player->clientConnection, rollNow.c_str(), static_cast<int>(rollNow.length()), 0);
 		recv(player->clientConnection, recvbuf, sizeof(recvbuf), 0);
 	} while (*recvbuf != 'r');
 
@@ -634,7 +633,7 @@ int Server::CalculateDamageDone(int armyNum, SoldierType attacker, SoldierType d
 	roll = dist(random);
 	float damageModifier = 0.5f;
 	damageModifier += roll;
-	int damageDone = damageModifier * armyNum * damageMatrix[attacker][defender];
+	int damageDone = static_cast<int>(damageModifier * armyNum * damageMatrix[attacker][defender]);
 
 	return damageDone;
 }
@@ -694,7 +693,7 @@ void Server::SendClientCommandList(int client)
 		//std::cout << command << "\n";
 	}
 	std::cout << tempString;
-	send(client, tempString.c_str(), tempString.size(), 0);
+	send(client, tempString.c_str(), static_cast<int>(tempString.size()), 0);
 }
 
 
@@ -704,6 +703,7 @@ void Server::InitializeCommandFunctions()
 	std::function<bool(std::string, int, int[])> loginFunction = [noChallenge = this->m_noChallenge, clientsConnected = this->m_clientsConnected,
 		&players = this->m_players](std::string playerInput, int i, int client[]) -> bool
 	{
+		//TODO remove this part. It is not needed anymore since client should process this ------------------
 		int iResult;
 		std::string temp;
 
@@ -713,19 +713,21 @@ void Server::InitializeCommandFunctions()
 			temp += playerInput[j];
 			++j;
 		}
-		printf("Size of tempName %d\n", temp.length());
-		printf("Size of playerInput %d\n", playerInput.length());
+
+		std::cout << "Size of tempName " << temp.length() << std::endl;
+		std::cout << "Size of playerInput " << playerInput.length() << std::endl;
 
 		if (playerInput.length() < 5 + temp.length())
 		{
 			std::string noPassword = "No password entered, Enter a password along with your username.";
-			iResult = send(client[i], noPassword.c_str(), noPassword.length(), 0);
+			iResult = send(client[i], noPassword.c_str(), static_cast<int>(noPassword.length()), 0);
 			if (iResult == SOCKET_ERROR)
 			{
 				std::cout << "send failed: " << WSAGetLastError() << std::endl;
 			}
 			return false;
 		}
+		//--------------------------------------------------------------------------------------------------------
 		else
 		{
 
@@ -802,7 +804,7 @@ void Server::InitializeCommandFunctions()
 		//	tempString.append(command + "\n");
 		//}
 		std::cout << tempString;
-		int iResult = send(*client, tempString.c_str(), tempString.size(), 0);
+		int iResult = send(*client, tempString.c_str(), static_cast<int>(tempString.size()), 0);
 		if (iResult == SOCKET_ERROR)
 		{
 			std::cout << "send failed: " << WSAGetLastError() << std::endl;
@@ -819,7 +821,7 @@ void Server::InitializeCommandFunctions()
 		{
 			if (client.player.playerstate() == Player::PlayerState::Player_PlayerState_Lobby)
 			{
-				iResult = send(clientsConnected[i].clientConnection, client.player.name().c_str(), client.player.name().length(), 0);
+				iResult = send(clientsConnected[i].clientConnection, client.player.name().c_str(), static_cast<int>(client.player.name().length()), 0);
 
 				if (iResult == SOCKET_ERROR)
 				{
