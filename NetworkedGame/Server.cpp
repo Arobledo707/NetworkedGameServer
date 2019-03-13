@@ -700,7 +700,7 @@ void Server::SendClientCommandList(int client)
 
 void Server::InitializeCommandFunctions()
 {
-	std::function<bool(std::string, int, int[])> loginFunction = [noChallenge = this->m_noChallenge, clientsConnected = this->m_clientsConnected,
+	std::function<bool(std::string, int, int[])> loginFunction = [&noChallenge = this->m_noChallenge, &clientsConnected = this->m_clientsConnected,
 		&players = this->m_players](std::string playerInput, int i, int client[]) -> bool
 	{
 		//TODO remove this part. It is not needed anymore since client should process this ------------------
@@ -795,7 +795,7 @@ void Server::InitializeCommandFunctions()
 		}
 	};
 
-	std::function<bool(std::string, int, int[])> commandFunction = [commands = this->m_commands]
+	std::function<bool(std::string, int, int[])> commandFunction = [&commands = this->m_commands]
 	(std::string playerInput, int i, int client[]) -> bool
 	{
 		std::string tempString = "Here are the available commands:\n";
