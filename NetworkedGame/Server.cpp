@@ -696,7 +696,6 @@ void Server::InitializeCommandFunctions()
 	std::function<bool(std::string, int, int[])> loginFunction = [&noChallenge = this->m_noChallenge, &clientsConnected = this->m_clientsConnected,
 		&players = this->m_players](std::string playerInput, int i, int client[]) -> bool
 	{
-		//TODO remove this part. It is not needed anymore since client should process this ------------------
 		int iResult;
 		ServerCommand command;
 		command.ParseFromString(playerInput);
@@ -714,9 +713,9 @@ void Server::InitializeCommandFunctions()
 
 			return false;
 		}
-		//--------------------------------------------------------------------------------------------------------
 		else
 		{
+			// look for player in known players
 			std::string temp;
 			Player newPlayer;
 			newPlayer.set_name(command.content(0));
@@ -739,7 +738,7 @@ void Server::InitializeCommandFunctions()
 
 					clientsConnected[i].player = testPlayer;
 					clientsConnected[i].player.set_playerstate(Player::PlayerState::Player_PlayerState_Lobby);
-					std::cout << "Player: " << testPlayer.name() << " has logged in.";
+					std::cout << "Player: " << testPlayer.name() << " has logged in." << std::endl;
 				}
 				else
 				{
@@ -750,10 +749,11 @@ void Server::InitializeCommandFunctions()
 						std::cout << "send failed: " << WSAGetLastError() << std::endl;
 					}
 
-					std::cout << "Player: " << testPlayer.name() << " has entered an incorrect password.";
+					std::cout << "Player: " << testPlayer.name() << " has entered an incorrect password." << std::endl;
 				}
 
 			}
+			// create new player 
 			else
 			{
 				newPlayer.set_wins(0);
@@ -848,11 +848,6 @@ void Server::InitializeCommandFunctions()
 		return true;
 	};
 
-	std::function<bool(std::string, int, int[])> helpFunction = [commands = this->m_commands]
-	(std::string playerInput, int i, int client[]) -> bool
-	{
-		return true;
-	};
 
 	m_availableCommands.emplace(Command::Login, loginFunction);
 	m_availableCommands.emplace(Command::Commands, commandFunction);
@@ -862,7 +857,6 @@ void Server::InitializeCommandFunctions()
 	m_availableCommands.emplace(Command::Quit, quitFunction);
 	m_availableCommands.emplace(Command::Challenge, challengeFunction);
 	m_availableCommands.emplace(Command::Chat, chatFunction);
-	m_availableCommands.emplace(Command::Help, helpFunction);
-	assert(m_availableCommands.size() == Command::CommandSize);
+	assert(m_availableCommands.size() == (Command::CommandSize-1));
 }
 
