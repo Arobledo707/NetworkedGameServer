@@ -91,7 +91,7 @@ void protobuf_AddDesc_ServerCommands_2eproto_impl() {
   protobuf_InitDefaults_ServerCommands_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\024ServerCommands.proto\"1\n\rServerCommand\022"
-    "\017\n\007command\030\001 \002(\005\022\017\n\007content\030\002 \001(\t", 73);
+    "\017\n\007command\030\001 \002(\005\022\017\n\007content\030\002 \003(\t", 73);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "ServerCommands.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_ServerCommands_2eproto);
@@ -146,7 +146,6 @@ ServerCommand::ServerCommand(const ServerCommand& from)
 
 void ServerCommand::SharedCtor() {
   _cached_size_ = 0;
-  content_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   command_ = 0;
 }
 
@@ -156,7 +155,6 @@ ServerCommand::~ServerCommand() {
 }
 
 void ServerCommand::SharedDtor() {
-  content_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void ServerCommand::SetCachedSize(int size) const {
@@ -186,12 +184,8 @@ ServerCommand* ServerCommand::New(::google::protobuf::Arena* arena) const {
 
 void ServerCommand::Clear() {
 // @@protoc_insertion_point(message_clear_start:ServerCommand)
-  if (_has_bits_[0 / 32] & 3u) {
-    command_ = 0;
-    if (has_content()) {
-      content_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-    }
-  }
+  command_ = 0;
+  content_.Clear();
   _has_bits_.Clear();
   if (_internal_metadata_.have_unknown_fields()) {
     mutable_unknown_fields()->Clear();
@@ -222,19 +216,21 @@ bool ServerCommand::MergePartialFromCodedStream(
         break;
       }
 
-      // optional string content = 2;
+      // repeated string content = 2;
       case 2: {
         if (tag == 18) {
          parse_content:
           DO_(::google::protobuf::internal::WireFormatLite::ReadString(
-                input, this->mutable_content()));
+                input, this->add_content()));
           ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
-            this->content().data(), this->content().length(),
+            this->content(this->content_size() - 1).data(),
+            this->content(this->content_size() - 1).length(),
             ::google::protobuf::internal::WireFormat::PARSE,
             "ServerCommand.content");
         } else {
           goto handle_unusual;
         }
+        if (input->ExpectTag(18)) goto parse_content;
         if (input->ExpectAtEnd()) goto success;
         break;
       }
@@ -269,14 +265,14 @@ void ServerCommand::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->command(), output);
   }
 
-  // optional string content = 2;
-  if (has_content()) {
+  // repeated string content = 2;
+  for (int i = 0; i < this->content_size(); i++) {
     ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
-      this->content().data(), this->content().length(),
+      this->content(i).data(), this->content(i).length(),
       ::google::protobuf::internal::WireFormat::SERIALIZE,
       "ServerCommand.content");
-    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
-      2, this->content(), output);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      2, this->content(i), output);
   }
 
   if (_internal_metadata_.have_unknown_fields()) {
@@ -295,15 +291,14 @@ void ServerCommand::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->command(), target);
   }
 
-  // optional string content = 2;
-  if (has_content()) {
+  // repeated string content = 2;
+  for (int i = 0; i < this->content_size(); i++) {
     ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
-      this->content().data(), this->content().length(),
+      this->content(i).data(), this->content(i).length(),
       ::google::protobuf::internal::WireFormat::SERIALIZE,
       "ServerCommand.content");
-    target =
-      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
-        2, this->content(), target);
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteStringToArray(2, this->content(i), target);
   }
 
   if (_internal_metadata_.have_unknown_fields()) {
@@ -324,11 +319,12 @@ size_t ServerCommand::ByteSizeLong() const {
       ::google::protobuf::internal::WireFormatLite::Int32Size(
         this->command());
   }
-  // optional string content = 2;
-  if (has_content()) {
-    total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::StringSize(
-        this->content());
+  // repeated string content = 2;
+  total_size += 1 *
+      ::google::protobuf::internal::FromIntSize(this->content_size());
+  for (int i = 0; i < this->content_size(); i++) {
+    total_size += ::google::protobuf::internal::WireFormatLite::StringSize(
+      this->content(i));
   }
 
   if (_internal_metadata_.have_unknown_fields()) {
@@ -369,13 +365,10 @@ void ServerCommand::MergeFrom(const ServerCommand& from) {
 
 void ServerCommand::UnsafeMergeFrom(const ServerCommand& from) {
   GOOGLE_DCHECK(&from != this);
+  content_.UnsafeMergeFrom(from.content_);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_command()) {
       set_command(from.command());
-    }
-    if (from.has_content()) {
-      set_has_content();
-      content_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.content_);
     }
   }
   if (from._internal_metadata_.have_unknown_fields()) {
@@ -410,7 +403,7 @@ void ServerCommand::Swap(ServerCommand* other) {
 }
 void ServerCommand::InternalSwap(ServerCommand* other) {
   std::swap(command_, other->command_);
-  content_.Swap(&other->content_);
+  content_.UnsafeArenaSwap(&other->content_);
   std::swap(_has_bits_[0], other->_has_bits_[0]);
   _internal_metadata_.Swap(&other->_internal_metadata_);
   std::swap(_cached_size_, other->_cached_size_);
@@ -451,58 +444,59 @@ void ServerCommand::set_command(::google::protobuf::int32 value) {
   // @@protoc_insertion_point(field_set:ServerCommand.command)
 }
 
-// optional string content = 2;
-bool ServerCommand::has_content() const {
-  return (_has_bits_[0] & 0x00000002u) != 0;
-}
-void ServerCommand::set_has_content() {
-  _has_bits_[0] |= 0x00000002u;
-}
-void ServerCommand::clear_has_content() {
-  _has_bits_[0] &= ~0x00000002u;
+// repeated string content = 2;
+int ServerCommand::content_size() const {
+  return content_.size();
 }
 void ServerCommand::clear_content() {
-  content_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  clear_has_content();
+  content_.Clear();
 }
-const ::std::string& ServerCommand::content() const {
+const ::std::string& ServerCommand::content(int index) const {
   // @@protoc_insertion_point(field_get:ServerCommand.content)
-  return content_.GetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  return content_.Get(index);
 }
-void ServerCommand::set_content(const ::std::string& value) {
-  set_has_content();
-  content_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+::std::string* ServerCommand::mutable_content(int index) {
+  // @@protoc_insertion_point(field_mutable:ServerCommand.content)
+  return content_.Mutable(index);
+}
+void ServerCommand::set_content(int index, const ::std::string& value) {
   // @@protoc_insertion_point(field_set:ServerCommand.content)
+  content_.Mutable(index)->assign(value);
 }
-void ServerCommand::set_content(const char* value) {
-  set_has_content();
-  content_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+void ServerCommand::set_content(int index, const char* value) {
+  content_.Mutable(index)->assign(value);
   // @@protoc_insertion_point(field_set_char:ServerCommand.content)
 }
-void ServerCommand::set_content(const char* value, size_t size) {
-  set_has_content();
-  content_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
-      ::std::string(reinterpret_cast<const char*>(value), size));
+void ServerCommand::set_content(int index, const char* value, size_t size) {
+  content_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
   // @@protoc_insertion_point(field_set_pointer:ServerCommand.content)
 }
-::std::string* ServerCommand::mutable_content() {
-  set_has_content();
-  // @@protoc_insertion_point(field_mutable:ServerCommand.content)
-  return content_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+::std::string* ServerCommand::add_content() {
+  // @@protoc_insertion_point(field_add_mutable:ServerCommand.content)
+  return content_.Add();
 }
-::std::string* ServerCommand::release_content() {
-  // @@protoc_insertion_point(field_release:ServerCommand.content)
-  clear_has_content();
-  return content_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+void ServerCommand::add_content(const ::std::string& value) {
+  content_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:ServerCommand.content)
 }
-void ServerCommand::set_allocated_content(::std::string* content) {
-  if (content != NULL) {
-    set_has_content();
-  } else {
-    clear_has_content();
-  }
-  content_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), content);
-  // @@protoc_insertion_point(field_set_allocated:ServerCommand.content)
+void ServerCommand::add_content(const char* value) {
+  content_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:ServerCommand.content)
+}
+void ServerCommand::add_content(const char* value, size_t size) {
+  content_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:ServerCommand.content)
+}
+const ::google::protobuf::RepeatedPtrField< ::std::string>&
+ServerCommand::content() const {
+  // @@protoc_insertion_point(field_list:ServerCommand.content)
+  return content_;
+}
+::google::protobuf::RepeatedPtrField< ::std::string>*
+ServerCommand::mutable_content() {
+  // @@protoc_insertion_point(field_mutable_list:ServerCommand.content)
+  return &content_;
 }
 
 inline const ServerCommand* ServerCommand::internal_default_instance() {

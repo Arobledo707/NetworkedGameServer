@@ -179,6 +179,8 @@ bool Server::Init()
 
 	InitializeCommandFunctions();
 
+	std::cout << "Server Initialized!" << std::endl;
+
 	return true;
 }
 
@@ -254,6 +256,8 @@ void Server::Update()
 
 					ServerCommand command;
 					command.ParseFromString(playerInput);
+
+					std::cout << playerInput;
 					// only allow login if logged out
 					if (m_clientsConnected[i].player.playerstate() == Player::PlayerState::Player_PlayerState_LoggedOut)
 					{
@@ -261,7 +265,7 @@ void Server::Update()
 						if (command.command() == Command::Login)
 						{
 							auto loginFunction = m_availableCommands.find(Command::Login);
-							if (loginFunction->second(command.content(), i, &m_client[i]))
+							if (loginFunction->second(playerInput, i, &m_client[i]))
 							{
 								std::cout << "Client: " << m_client[i] << " logged in." << std::endl;
 							}
@@ -270,20 +274,6 @@ void Server::Update()
 								std::cout << "Client: " << m_client[i] << " failed to login" << std::endl;
 							}
 						}
-						//if (playerInput.substr(0, m_commands[Command::Login].size()) == m_commands[Command::Login])
-						//{
-						//	auto loginFunction = m_availableCommands.find(Command::Login);
-						//	//std::function<bool(std::string, int, int[])> function = m_availableCommands.find(Command::Login);
-						//	if (loginFunction->second(playerInput, i, &m_client[i]))
-						//	{
-						//		std::cout << "Client: " << m_client[i] << " logged in." << std::endl;
-						//	}
-						//	else
-						//	{
-						//		std::cout << "Client: " << m_client[i] << " failed to login" << std::endl;
-						//	}
-
-						//}
 					}
 					else if (m_clientsConnected[i].player.playerstate() == Player::PlayerState::Player_PlayerState_Challenged &&
 						m_clientsConnected[i].player.challengeid() != m_noChallenge)
@@ -697,7 +687,10 @@ void Server::SendClientCommandList(int client)
 }
 
 
-
+//TODO have lambda's take ServerCommand instead of strings
+// its parsing from string twice basically which is bad
+// and it is using the copy constructor
+// should be reference for all of these after I finish refactoring client
 void Server::InitializeCommandFunctions()
 {
 	std::function<bool(std::string, int, int[])> loginFunction = [&noChallenge = this->m_noChallenge, &clientsConnected = this->m_clientsConnected,
@@ -705,36 +698,29 @@ void Server::InitializeCommandFunctions()
 	{
 		//TODO remove this part. It is not needed anymore since client should process this ------------------
 		int iResult;
-		std::string temp;
+		ServerCommand command;
+		command.ParseFromString(playerInput);
 
-		int j = 6;
-		while (playerInput[j] != ' ')
+		// contents should be 2
+		// user and password
+		if (command.content_size() < 2)
 		{
-			temp += playerInput[j];
-			++j;
-		}
+			iResult = send(client[i], "Failed to Login", sizeof("Failed to Login"), 0);
 
-		std::cout << "Size of tempName " << temp.length() << std::endl;
-		std::cout << "Size of playerInput " << playerInput.length() << std::endl;
-
-		if (playerInput.length() < 5 + temp.length())
-		{
-			std::string noPassword = "No password entered, Enter a password along with your username.";
-			iResult = send(client[i], noPassword.c_str(), static_cast<int>(noPassword.length()), 0);
 			if (iResult == SOCKET_ERROR)
 			{
 				std::cout << "send failed: " << WSAGetLastError() << std::endl;
 			}
+
 			return false;
 		}
 		//--------------------------------------------------------------------------------------------------------
 		else
 		{
-
+			std::string temp;
 			Player newPlayer;
-			newPlayer.set_name(temp);
-			newPlayer.set_password(playerInput.substr((temp.length()), playerInput.length()));
-			printf(temp.c_str());
+			newPlayer.set_name(command.content(0));
+			newPlayer.set_password(command.content(1));
 			std::unordered_map<std::string, std::string>::iterator it = players.find(newPlayer.name());
 			if (it != players.end())
 			{
@@ -862,6 +848,12 @@ void Server::InitializeCommandFunctions()
 		return true;
 	};
 
+	std::function<bool(std::string, int, int[])> helpFunction = [commands = this->m_commands]
+	(std::string playerInput, int i, int client[]) -> bool
+	{
+		return true;
+	};
+
 	m_availableCommands.emplace(Command::Login, loginFunction);
 	m_availableCommands.emplace(Command::Commands, commandFunction);
 	m_availableCommands.emplace(Command::List, listFunction);
@@ -870,6 +862,7 @@ void Server::InitializeCommandFunctions()
 	m_availableCommands.emplace(Command::Quit, quitFunction);
 	m_availableCommands.emplace(Command::Challenge, challengeFunction);
 	m_availableCommands.emplace(Command::Chat, chatFunction);
+	m_availableCommands.emplace(Command::Help, helpFunction);
 	assert(m_availableCommands.size() == Command::CommandSize);
 }
 
