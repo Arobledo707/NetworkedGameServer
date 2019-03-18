@@ -9,6 +9,8 @@
 #include <random>
 #include <functional>
 #include <map>
+#include <thread>
+#include <atomic>
 
 #include "protoTest.pb.h"
 #include "ServerCommands.pb.h"
@@ -17,7 +19,8 @@
 #define DEFAULT_BUFLEN 512
 #define FD_SETSIZE 100
 
-//TODO make client check if input is a command then send that message
+//TODO add gametype and refactor game functions into game base class
+// add checkers
 //
 
 struct ClientConnection
@@ -79,8 +82,8 @@ public:
 	static std::vector<int> ArmyAttack(int attackerCount, int attackerType, Army& enemyArmy);
 
 private:
-	void SendClientCommandList(int client);
 	void InitializeCommandFunctions();
+	void InitializeGameInstantce(LPVOID playerSockets);
 
 private:
 	SOCKET m_listenSocket = INVALID_SOCKET;
@@ -90,6 +93,8 @@ private:
 
 	std::unordered_map<std::string, std::string> m_players;
 	std::unordered_map<int, PendingChallenge> m_challenges;
+
+	std::vector<std::thread> m_gameThreads;
 
 	unsigned int m_challengeID = 0;
 	int m_noChallenge = -1;
@@ -117,5 +122,5 @@ private:
 	std::map<Command, std::function<bool(std::string, int, int[])>> m_availableCommands;
 
 	std::vector<std::string> m_commands{ "Challenge", "Info", "Quit", "Login", "Logout", "Chat", "List", "Commands, Help" };
-	const std::string m_sendString = "Ready to login!";
+	const std::string m_sendString = "Ready to login!\nLogin {username} {password}";
 };

@@ -187,7 +187,7 @@ bool Server::Init()
 // Server Update
 void Server::Update()
 {
-	for (; ;)
+	while (true)
 	{
 		m_rset = m_allSet;
 		m_nready = select(static_cast<int>(m_maxfd + 1), &m_rset, NULL, NULL, NULL);
@@ -297,8 +297,11 @@ void Server::Update()
 								auto challengerIt = m_players.find(challenge.challenger->player.name());
 								challenge.serializedChallenger = &challengerIt->second;
 
-								// should work
-								CreateThread(NULL, 0, GameInstance, (LPVOID)&m_challenges[challenge.challengeID], 0, 0);
+								//not tested yet. Hopefully it works
+								m_gameThreads.push_back(std::thread(&Server::InitializeGameInstantce, this, (LPVOID)&m_challenges[challenge.challengeID]));
+
+								// old way of creating thread :(( 
+								//CreateThread(NULL, 0, GameInstance, (LPVOID)&m_challenges[challenge.challengeID], 0, 0);
 							}
 						}
 						else if (playerInput.substr(0, no.size()) == no)
@@ -427,6 +430,7 @@ void Server::Update()
 
 void Server::CleanUp()
 {
+	std::cout << "Shutting down server and cleaning up." << std::endl;
 	//TODO close all sockets
 	WSACleanup();
 }
@@ -673,19 +677,6 @@ std::vector<int> Server::ArmyAttack(int attackerCount, int attackerType, Army & 
 	return enemiesKilledVec;
 }
 
-void Server::SendClientCommandList(int client)
-{
-	std::string tempString = "Here are the available commands:\n";
-	for (std::string command : m_commands)
-	{
-		tempString.append(command + "\n");
-		//send(client, command.c_str(), sizeof(command), 0);
-		//std::cout << command << "\n";
-	}
-	std::cout << tempString;
-	send(client, tempString.c_str(), static_cast<int>(tempString.size()), 0);
-}
-
 
 //TODO have lambda's take ServerCommand instead of strings
 // its parsing from string twice basically which is bad
@@ -693,6 +684,29 @@ void Server::SendClientCommandList(int client)
 // should be reference for all of these after I finish refactoring client
 void Server::InitializeCommandFunctions()
 {
+	// maybe will need to pass in more parameters instead of captures for function pointers
+	//std::map<Command, bool(void*)> commands;
+
+	//void (*lol)(std::string, int, int[]) = [](std::string ok, int one, int two[]) 
+	//{
+	//	std::cout << "hi"; 
+	//};
+
+	//bool(*fuck)[int, ClientConnection, std::unordered_map<std::string, std::string>](std::string, int, int[]) = [&noChallenge = this->m_noChallenge, &clientsConnected = this->m_clientsConnected,
+	//	&players = this->m_players](std::string playerInput, int i, int client[]) -> bool
+	//{
+	//	return true;
+	//};
+
+
+	//bool (*function)(std::string, int, int[]) =  [&noChallenge = this->m_noChallenge, &clientsConnected = this->m_clientsConnected,
+	//	&players = this->m_players](std::string playerInput, int i, int client[]) -> bool
+	//{
+	//	return true; 
+	//};
+
+	//commands.emplace(Command::Chat, function);
+	
 	std::function<bool(std::string, int, int[])> loginFunction = [&noChallenge = this->m_noChallenge, &clientsConnected = this->m_clientsConnected,
 		&players = this->m_players](std::string playerInput, int i, int client[]) -> bool
 	{
@@ -858,5 +872,119 @@ void Server::InitializeCommandFunctions()
 	m_availableCommands.emplace(Command::Challenge, challengeFunction);
 	m_availableCommands.emplace(Command::Chat, chatFunction);
 	assert(m_availableCommands.size() == (Command::CommandSize-1));
+}
+
+void Server::InitializeGameInstantce(LPVOID playerSockets)
+{
+	int iResult = 0;
+	char recvbuf[DEFAULT_BUFLEN];
+	memset(recvbuf, 0, sizeof(char) * DEFAULT_BUFLEN);
+
+	PendingChallenge* test = (PendingChallenge*)playerSockets;
+
+	ClientConnection* challenger = test->challenger;
+	ClientConnection* challengee = test->challengee;
+	bool gameIsPlaying = false;
+
+	if (challenger->clientConnection == INVALID_SOCKET)
+	{
+		std::cout << "Invalid challenger" << std::endl;
+		return;
+	}
+	if (challengee->clientConnection == INVALID_SOCKET)
+	{
+		std::cout << "Invalid challengee" << std::endl;
+		return;
+	}
+
+	gameIsPlaying = true;
+
+	Game game;
+	Army army1;
+	Army army2;
+
+	bool playerOneTurn = true;
+	while (gameIsPlaying)
+	{
+		if (!game.has_army1())
+		{
+			Server::InitArmy(challenger, challengee, army1, game, recvbuf, true);
+		}
+
+		if (!game.has_army2())
+		{
+			Server::InitArmy(challengee, challenger, army2, game, recvbuf, false);
+		}
+
+		// pretty bad but it does work for now
+		const std::string clearScreen = "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n";
+		iResult = send(challengee->clientConnection, clearScreen.c_str(), static_cast<int>(clearScreen.length()), 0);
+		iResult = send(challenger->clientConnection, clearScreen.c_str(), static_cast<int>(clearScreen.length()), 0);
+
+
+		if (playerOneTurn)
+		{
+			playerOneTurn = false;
+			auto enemiesKilled = Server::TakeTurn(army1, army2, challengee, recvbuf);
+
+			std::string killedString = challengee->player.name() + " " + std::to_string(enemiesKilled[0]) + " swordsman killed\n" +
+				std::to_string(enemiesKilled[1]) + " archers killed\n" + std::to_string(enemiesKilled[2]) + " cavalry killed";
+			iResult = send(challenger->clientConnection, killedString.c_str(), static_cast<int>(killedString.length()), 0);
+			iResult = send(challengee->clientConnection, killedString.c_str(), static_cast<int>(killedString.length()), 0);
+		}
+		else
+		{
+			playerOneTurn = true;
+			auto enemiesKilled = Server::TakeTurn(army2, army1, challenger, recvbuf);
+
+			std::string killedString = challenger->player.name() + " " + std::to_string(enemiesKilled[0]) + " swordsman killed\n" +
+				std::to_string(enemiesKilled[1]) + " archers killed\n" + std::to_string(enemiesKilled[2]) + " cavalry killed";
+			send(challenger->clientConnection, killedString.c_str(), static_cast<int>(killedString.length()), 0);
+			send(challengee->clientConnection, killedString.c_str(), static_cast<int>(killedString.length()), 0);
+		}
+
+		std::string army1Stats = Server::PrintArmy(army1, challengee->player);
+		std::string army2Stats = Server::PrintArmy(army2, challenger->player);
+
+		//send Army stats
+		iResult = send(challenger->clientConnection, army1Stats.c_str(), static_cast<int>(army1Stats.length()), 0);
+		iResult = send(challenger->clientConnection, army2Stats.c_str(), static_cast<int>(army2Stats.length()), 0);
+
+		iResult = send(challengee->clientConnection, army1Stats.c_str(), static_cast<int>(army1Stats.length()), 0);
+		iResult = send(challengee->clientConnection, army2Stats.c_str(), static_cast<int>(army2Stats.length()), 0);
+
+		if (game.army1().archers() <= 0 && game.army1().swordsman() <= 0 && game.army1().cavalry() <= 0)
+		{
+			gameIsPlaying = false;
+			std::string resultString = challenger->player.name() + " defeated " + challengee->player.name();
+
+			challenger->player.set_wins(challenger->player.wins() + 1);
+			challenger->player.add_playhistory(resultString);
+
+			challengee->player.set_losses(challengee->player.losses() + 1);
+			challengee->player.add_playhistory(resultString);
+		}
+
+		if (game.army2().archers() <= 0 && game.army2().swordsman() <= 0 && game.army2().cavalry() <= 0)
+		{
+			gameIsPlaying = false;
+			std::string resultString = challengee->player.name() + " defeated " + challenger->player.name();
+
+			challengee->player.set_wins(challengee->player.wins() + 1);
+			challengee->player.add_playhistory(resultString);
+
+			challenger->player.set_losses(challenger->player.losses() + 1);
+			challenger->player.add_playhistory(resultString);
+		}
+	}
+
+	challengee->player.set_playerstate(Player::PlayerState::Player_PlayerState_Lobby);
+	challenger->player.set_playerstate(Player::PlayerState::Player_PlayerState_Lobby);
+
+	challengee->player.SerializeToString(test->serializedChallengee);
+	challenger->player.SerializeToString(test->serializedChallenger);
+
+	game.release_army1();
+	game.release_army2();
 }
 
